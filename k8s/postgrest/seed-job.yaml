@@ -32,7 +32,8 @@ spec:
               -- Grant read access to the anonymous API role
               GRANT SELECT ON public.todos TO web_anon;
 
-              -- Seed sample data
+              -- Clear and re-seed data (idempotent)
+              TRUNCATE public.todos RESTART IDENTITY;
               INSERT INTO public.todos (task, done) VALUES
                 ('Deploy PostgREST to Kubernetes',       true),
                 ('Configure Ingress for external access', true),

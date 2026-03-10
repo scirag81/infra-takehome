@@ -48,31 +48,26 @@ This will:
 - Create the `postgrest` Kubernetes namespace
 - Inject the `postgrest-secrets` Secret containing `PGRST_DB_URI`
 
-### 2. Install Argo CD (optional)
+### 2. Install Argo CD and deploy PostgREST
 
 ```bash
 kubectl create namespace argocd
 kubectl apply --server-side -k argocd/
+kubectl -n argocd wait --for=condition=available deployment/argocd-server --timeout=180s
 ```
 
-### 3. Deploy PostgREST
+Then deploy the PostgREST ArgoCD Application:
 
 ```bash
-kubectl apply -f k8s/postgrest/deployment.yaml
-kubectl apply -f k8s/postgrest/service.yaml
-kubectl apply -f k8s/postgrest/ingress.yaml
+kubectl apply -f argocd/postgrest-app.yaml
 ```
+
+ArgoCD will automatically sync and create the Deployment, Service, Ingress, and seed Job from the `k8s/postgrest/` directory.
 
 Wait for the PostgREST pod to be ready:
 
 ```bash
 kubectl -n postgrest wait --for=condition=ready pod -l app=postgrest --timeout=120s
-```
-
-### 4. Seed the database
-
-```bash
-kubectl apply -f k8s/postgrest/seed-job.yaml
 ```
 
 Wait for the seed job to complete:
@@ -81,7 +76,7 @@ Wait for the seed job to complete:
 kubectl -n postgrest wait --for=condition=complete job/seed-data --timeout=60s
 ```
 
-### 5. Verify
+### 3. Verify
 
 Open your browser to [http://localhost:8080/todos](http://localhost:8080/todos) to see the seeded data.
 
@@ -167,6 +162,17 @@ postgrest database
 ```
 
 ## Teardown
+
+First, drop database objects that have dependencies (required for a clean `tofu destroy`):
+
+```bash
+docker exec postgres-infra-takehome psql -U postgres -d postgrest -c \
+  "DROP TABLE IF EXISTS public.todos CASCADE; \
+   REVOKE ALL ON SCHEMA public FROM web_anon; \
+   ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public REVOKE SELECT ON TABLES FROM web_anon;"
+```
+
+Then destroy all infrastructure:
 
 ```bash
 cd tofu
