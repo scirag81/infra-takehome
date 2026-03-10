@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: seed-data
+  namespace: postgrest
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        job: seed-data
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: seed
+          image: postgres:16-alpine
+          env:
+            - name: PGPASSWORD
+              value: "postgres"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              psql -h postgres-infra-takehome -U postgres -d postgrest <<'SQL'
+              -- Create the todos table
+              CREATE TABLE IF NOT EXISTS public.todos (
+                id    SERIAL PRIMARY KEY,
+                task  TEXT    NOT NULL,
+                done  BOOLEAN DEFAULT false
+              );
+
+              -- Grant read access to the anonymous API role
+              GRANT SELECT ON public.todos TO web_anon;
+
+              -- Seed sample data
+              INSERT INTO public.todos (task, done) VALUES
+                ('Deploy PostgREST to Kubernetes',       true),
+                ('Configure Ingress for external access', true),
+                ('Seed the database with sample data',    true),
+                ('Verify API returns JSON response',      false),
+                ('Submit infrastructure take-home',       false);
+              SQL

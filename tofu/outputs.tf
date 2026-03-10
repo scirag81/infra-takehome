@@ -18,3 +18,9 @@ output "postgres_connection_string" {
   value       = "postgresql://postgres:${var.postgres_password}@localhost:${var.postgres_port}/app"
   sensitive   = true
 }
+
+output "postgrest_db_uri" {
+  description = "PostgREST database URI used by the authenticator role"
+  value       = "postgresql://authenticator:${var.postgrest_authenticator_password}@postgres-infra-takehome:${var.postgres_port}/postgrest"
+  sensitive   = true
+}

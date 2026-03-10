@@ -22,3 +22,10 @@ variable "postgres_port" {
   type        = number
   default     = 5432
 }
+
+variable "postgrest_authenticator_password" {
+  description = "Password for the PostgREST authenticator database role"
+  type        = string
+  default     = "authenticator_secret"
+  sensitive   = true
+}
